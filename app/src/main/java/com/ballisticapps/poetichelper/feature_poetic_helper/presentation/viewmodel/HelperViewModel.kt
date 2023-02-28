@@ -1,6 +1,6 @@
 package com.ballisticapps.poetichelper.feature_poetic_helper.presentation.viewmodel
 
-import android.app.Application
+import android.app.Activity
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
@@ -12,17 +12,17 @@ import com.ballisticapps.poetichelper.feature_poetic_helper.domain.model.Complet
 import com.ballisticapps.poetichelper.feature_poetic_helper.domain.model.Prompt
 import com.ballisticapps.poetichelper.feature_poetic_helper.domain.usecase.GetOpenAITextResponse
 import com.ballisticapps.poetichelper.feature_poetic_helper.presentation.HelperEvent
-import com.ballisticapps.poetichelper.reward_ads_feature.domain.repository.LoadRewardedAdUseCase
-import com.google.android.gms.ads.OnUserEarnedRewardListener
+import com.ballisticapps.poetichelper.reward_ads_feature.domain.repository.AdCallback
+import com.ballisticapps.poetichelper.reward_ads_feature.domain.repository.AdManagerRepository
+import com.google.android.gms.ads.rewarded.RewardItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class HelperViewModel @Inject constructor(
-    private val loadRewardedAdUseCase: LoadRewardedAdUseCase,
+    private val adManagerRepository: AdManagerRepository,
     private val getOpenAITextResponse: GetOpenAITextResponse,
-    private val context: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     var helperState = mutableStateOf(HelperUIState())
@@ -30,80 +30,41 @@ class HelperViewModel @Inject constructor(
 
     val _helperState = helperState.value
 
-    suspend fun onEvent(event: HelperEvent) {
+
+    fun onEvent(event: HelperEvent) {
         when (event) {
             is HelperEvent.ClickGeneratePoemButton -> {
-                viewModelScope.launch {
-                    when (val resource =
-                        loadRewardedAdUseCase.execute("ca-app-pub-3940256099942544/5224354917")) {
-                        is Resource.Success -> {
-                            // The rewarded ad was loaded successfully
-                            val ad = resource.data
-
-                            if (ad != null) {
-                                ad.show(Application, object : RewardedAdCallback() {
-                                    override fun onUserEarnedReward(reward: RewardItem) {
-                                        // Called when the user has earned the reward
-                                        // Make REST API call to handle the reward
-                                        viewModelScope.launch {
-                                            eventDataViewModel.sendRewardEvent()
-                                        }
-                                    }
-
-                                    override fun onRewardedAdClosed() {
-                                        // Called when the ad is closed.
-                                        // Set the ad reference to null so you don't show the ad a second time.
-                                        Log.d(TAG, "Ad closed.")
-                                        ad = null
-                                    }
-
-                                    override fun onRewardedAdFailedToShow(error: AdError?) {
-                                        // Called when the ad fails to show.
-                                        Log.e(TAG, "Ad failed to show.")
-                                        ad = null
-                                    }
-
-                                    override fun onRewardedAdOpened() {
-                                        // Called when the ad is shown.
-                                        Log.d(TAG, "Ad shown.")
-                                    }
-                                })
-                            }
-
-                            // Set full-screen content callback for rewarded ad
-                            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                                override fun onAdClicked() {
-                                    // Called when a click is recorded for an ad.
-                                    Log.d(TAG, "Ad was clicked.")
+                //make ad request
+                event.activity.runOnUiThread {
+                    adManagerRepository.loadRewardedAd(event.activity) {
+                        //show ad
+                        adManagerRepository.showRewardedAd(
+                            event.activity,
+                            object : AdCallback {
+                                override fun onAdClosed() {
+                                    //to be added later
                                 }
 
-                                override fun onAdDismissedFullScreenContent() {
-                                    // Called when ad is dismissed.
-                                    // Set the ad reference to null so you don't show the ad a second time.
-                                    Log.d(TAG, "Ad dismissed fullscreen content.")
-                                    ad = null
+                                override fun onAdRewarded(reward: RewardItem) {
+                                    getAIResponse()
                                 }
 
-                                override fun onAdFailedToShowFullScreenContent(adError: AdError?) {
-                                    // Called when ad fails to show.
-                                    Log.e(TAG, "Ad failed to show fullscreen content.")
-                                    ad = null
+                                override fun onAdLeftApplication() {
+                                    TODO("Not yet implemented")
                                 }
 
-                                override fun onAdImpression() {
-                                    // Called when an impression is recorded for an ad.
-                                    Log.d(TAG, "Ad recorded an impression.")
+                                override fun onAdLoaded() {
+                                    TODO("Not yet implemented")
                                 }
 
-                                override fun onAdShowedFullScreenContent() {
-                                    // Called when ad is shown.
-                                    Log.d(TAG, "Ad showed fullscreen content.")
+                                override fun onAdFailedToLoad(errorCode: Int) {
+                                    //to be added later
                                 }
-                            }
-                        }
-                        is Resource.Error -> {
-                            Log.d(TAG, "Error loading rewarded ad: ${resource.message}")
-                        }
+
+                                override fun onAdOpened() {
+                                    TODO("Not yet implemented")
+                                }
+                            })
                     }
                 }
             }

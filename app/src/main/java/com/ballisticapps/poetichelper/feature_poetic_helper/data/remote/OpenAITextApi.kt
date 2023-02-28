@@ -9,7 +9,6 @@ import retrofit2.http.Headers
 import retrofit2.http.POST
 
 interface OpenAITextApi {
-
     @Headers("Content-Type: application/json", "Authorization: Bearer " + BuildConfig.API_KEY)
     @POST("completions")
     suspend fun getCompletion(@Body prompt: Prompt): Response<CompletionDTO>

@@ -1,5 +1,6 @@
 package com.ballisticapps.poetichelper.feature_poetic_helper.presentation
 
+import android.app.Activity
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -13,6 +14,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,6 +37,9 @@ fun HelperMainScreen(
     val answer = viewModel.helperState.value.questionAIExplanation.response
     val infiniteTransition = rememberInfiniteTransition()
     val scope = rememberCoroutineScope()
+    //main thread activity
+     val activity = LocalContext.current as Activity
+
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier
@@ -76,7 +81,7 @@ fun HelperMainScreen(
             IconButton(
                 onClick = {
                     GlobalScope.launch {
-                        viewModel.onEvent(HelperEvent.ClickGeneratePoemButton(promptState))
+                        viewModel.onEvent(HelperEvent.ClickGeneratePoemButton(promptState, activity))
                     }
                 },
                 modifier = Modifier
