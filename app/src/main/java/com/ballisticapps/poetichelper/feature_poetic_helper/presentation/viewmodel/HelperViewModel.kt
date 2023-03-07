@@ -8,6 +8,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ballisticapps.poetichelper.core.Resource
+import com.ballisticapps.poetichelper.feature_poetic_helper.data.remote.dto.Message
+import com.ballisticapps.poetichelper.feature_poetic_helper.domain.model.ChatCompletion
 import com.ballisticapps.poetichelper.feature_poetic_helper.domain.model.Completion
 import com.ballisticapps.poetichelper.feature_poetic_helper.domain.model.Prompt
 import com.ballisticapps.poetichelper.feature_poetic_helper.domain.usecase.GetOpenAITextResponse
@@ -81,25 +83,31 @@ class HelperViewModel @Inject constructor(
         viewModelScope.launch {
             val result = getOpenAITextResponse(
                 Prompt(
-                    "text-davinci-003",
-                    "Answer the following in the form of a wise and creative poem: "
-                            + helperState.value.question + "?",
-                    256,
-                    0,
-                    1,
-                    0
+                    model = "gpt-3.5-turbo",
+                    messages = listOf(
+                        Message(
+                            role = "user",
+                            content = "Answer the following in the form of a wise and creative poem: " + helperState.value.question + "?"
+                        )
+                    ),
+                    maxTokens = 256,
+                    temperature = 0.7,
+                    topP = 1.0,
+                    presencePenalty = 0,
+                    frequencyPenalty = 0,
+                    user = "Poem seeker"
                 )
             )
 
             result.collect { result ->
                 when (result) {
                     is Resource.Success -> {
-                        result.data as Completion
+                        result.data as ChatCompletion
 
                         helperState.value = helperState.value.copy(
-                            answer = result.data.choices[0].text,
+                            answer = result.data.choices[0].message.content,
                             questionAIExplanation = helperState.value.questionAIExplanation.copy(
-                                response = result.data.choices[0].text,
+                                response = result.data.choices[0].message.content,
                                 isLoading = false
                             )
                         )
@@ -123,9 +131,9 @@ class HelperViewModel @Inject constructor(
 }
 
 data class HelperUIState(
-    val question : String = "",
-    val answer : String = "",
-    val isAnswerVisible : Boolean = false,
+    val question: String = "",
+    val answer: String = "",
+    val isAnswerVisible: Boolean = false,
     val questionAIExplanation: QuestionAIExplanation = QuestionAIExplanation(
         response = "",
         isLoading = false,

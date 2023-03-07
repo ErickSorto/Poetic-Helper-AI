@@ -1,21 +1,32 @@
 package com.ballisticapps.poetichelper.feature_poetic_helper.data.remote.dto
 
+import com.ballisticapps.poetichelper.feature_poetic_helper.domain.model.ChatCompletion
 import com.ballisticapps.poetichelper.feature_poetic_helper.domain.model.Completion
+import com.google.gson.annotations.SerializedName
 
 data class CompletionDTO(
-    val choices: List<Choice>,
-    val created: Int,
     val id: String,
-    val model: String,
-    val `object`: String,
+    @SerializedName("object")
+    val objectValue: String,
+    val created: Int,
+    val choices: List<Choice>,
     val usage: Usage
 )
 
-fun CompletionDTO.toCompletion() = Completion(
-    choices = choices,
-    created = created,
+fun CompletionDTO.toChatCompletion() = ChatCompletion(
     id = id,
-    model = model,
-    `object` = `object`,
-    usage = usage
+    objectValue = objectValue,
+    created = created,
+    choices = choices.map {
+        Choice(
+            index = it.index,
+            message = it.message,
+            finishReason = it.finishReason
+        )
+    },
+    usage = Usage(
+        promptTokens = usage.promptTokens,
+        completionTokens = usage.completionTokens,
+        totalTokens = usage.totalTokens
+    )
 )
